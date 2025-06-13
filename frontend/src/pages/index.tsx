@@ -16,7 +16,7 @@ export default function Home() {
 
   const fetchItems = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/users');
+      const res = await fetch('/api/users');
       const data = await res.json();
       setItems(data.reverse());
     } catch (error) {
@@ -26,7 +26,7 @@ export default function Home() {
 
   const deleteItem = async (id: number) => {
     try {
-      await axios.delete(`http://localhost:5000/api/users/${id}`);
+      await axios.delete(`/api/users/${id}`);
       fetchItems();
     } catch (error) {
       console.error('Failed to delete item:', error);
@@ -38,7 +38,7 @@ export default function Home() {
     if (!name || !email) return;
 
     try {
-      const res = await fetch('http://localhost:5000/api/users', {
+      const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email }),
