@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Update system packages
+yum update -y
+
+# Install Apache
+yum install -y httpd
+
+# Start and enable Apache
+systemctl start httpd
+systemctl enable httpd
+
+# Wait for network and metadata service to be ready
+sleep 10
+
+# Fetch IMDSv2 token (retry if needed)
+TOKEN=""
+for i in {1..5}; do
+  TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" \
+          -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+  if [[ ! -z "$TOKEN" ]]; then
+    break
+  fi
+  sleep 2
+done
+
+# Get the public IPv4 address using the token
+PUBLIC_IP=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
+           http://169.254.169.254/latest/meta-data/public-ipv4)
+
+# Fallback if not found
+if [[ -z "$PUBLIC_IP" ]]; then
+  PUBLIC_IP="Not Available"
+fi
+
+# Generate HTML page
+cat <<EOF > /var/www/html/index.html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cloud Computing Tutorial</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 100px;
+    }
+    h1 {
+      color: #0077B5;
+    }
+    p {
+      font-size: 22px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to Cloud Computing Tutorial!</h1>
+  <p>This server's public IP is:</p>
+  <p style="color: green; font-size: 30px;"><strong>$PUBLIC_IP</strong></p>
+</body>
+</html>
+EOF
