@@ -1,0 +1,49 @@
+kubectl run nginx-pod --image=nginx:latest
+kubectl get pods
+
+kubectl explain pod
+kubectl delete pod nginx-pod
+
+kubectl create -f .\pod.yaml
+
+kubectl describe pod nginx-pod
+
+
+kubectl edit pod nginx-pod
+
+kubectl get pods
+
+kubectl exec -it nginx-pod -- sh
+
+kubectl run nginx --image=nginx --dry-run=client
+
+kubectl run nginx --image=nginx --dry-run=client -o yaml
+
+kubectl run nginx --image=nginx --dry-run=client -o yaml > pod-new.yaml
+
+kubectl describe pod nginx-pod
+
+kubectl get pods nginx-pod --show-labels
+
+
+kubectl get pods -o wide
+
+kubectl get nodes -o wide
+
+day -08
+
+kubectl explain rc (replication controller)
+ 
+kubectl get rc
+
+kubectl explain rs
+
+ kubectl delete rc/nginx-rc
+
+kubectl edit rs/nginx-rs
+
+
+
+
+
+

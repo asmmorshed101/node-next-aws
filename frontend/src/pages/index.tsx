@@ -8,6 +8,7 @@ interface Item {
   name: string;
   email: string;
 }
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Home() {
   const [items, setItems] = useState<Item[]>([]);
@@ -16,7 +17,7 @@ export default function Home() {
 
   const fetchItems = async () => {
     try {
-      const res = await fetch('/api/users');
+      const res = await fetch(`${API_URL}/api/users`);
       const data = await res.json();
       setItems(data.reverse());
     } catch (error) {
@@ -26,7 +27,7 @@ export default function Home() {
 
   const deleteItem = async (id: number) => {
     try {
-      await axios.delete(`/api/users/${id}`);
+      await axios.delete(`${API_URL}/api/users/${id}`);
       fetchItems();
     } catch (error) {
       console.error('Failed to delete item:', error);
@@ -38,7 +39,7 @@ export default function Home() {
     if (!name || !email) return;
 
     try {
-      const res = await fetch('/api/users', {
+      const res = await fetch(`${API_URL}/api/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email }),

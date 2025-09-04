@@ -1,0 +1,463 @@
+VPC --. IG
+
+NAT G--> Each public subnet
+	NAT-GW-AZ1
+	NAT-GW-AZ2 need to allocate elastic IP here
+
+Route Table
+	PublicRouteTable -- dest 000000 target IG-that has been created just now
+
+	subnet association-- associate two subnet
+
+
+Private route table AZ1
+	edit rotues -- add route --dest -00000 target - nat gateway az1
+private route table az2 
+	edit routes -- add route -- dest - 00000 target - nat gateway az2
+
+
+Securtiy group
+
+	1. Interfacing lb sg -> external load balancer sg --> vpc--> http source 00000 
+	2. WebTier-SG --> inbound add rule --> http-source sg-lb-sg
+					http - src-myip
+
+	3. internal-lb-sg vpc --> inbound - http - src sg-webtier-sg
+	4. privateinstance-sg  vpc --> inbound- custom tcp -4000 - src - internal-lb-sg
+						custom tcp-4000 src - myip
+	5. DB-SG--> vpc --> inbound - MySQL/aurora source-priavateinstance-sg
+
+
+Step 2
+===========================================
+
+Now go to RDS
+	create database subnet group--name vpc az(where created) -- then subnet(private for db)
+
+after creating subnet groups
+
+go to databases left side menu
+
+
+
+create database -- standard create -- az aurora -- dev/test-- username-admin- password--aurora standard-- default --
+
+availability and durability -- create an aurora replica or reader node 
+don't connect to an ec2 compute resource 
+
+select vpc and select subnet group
+
+No public access
+
+Choose existing firewall from SG--DB-sg
+
+
+password authentication
+
+turn off performance insights
+create db
+
+
+Now deploying apps
+
+Go to ec2
+
+create instance amazon Linux image t2 micro key pari network setting edit - privatesubnet-az1 -privateaz1sg--IAM role - demoec2role
+
+keep as default launch instance
+
+
+now login in ec2 using browser 
+
+sudo -su ec2-user
+
+ping 8.8.8.8 it is getting response
+
+
+scp -i ~/Downloads/your-access-key.pem ~/Downloads/my-key.pem ec2-user@<EC2-IP>:/home/ec2-user/
+
+
+
+install MySQL client : 
+
+sudu su
+whoami
+cd ..
+pwd
+cd home/ec2-user
+pwd
+ping 8.8.8.8
+
+
+
+
+now MySQL database
+======================================
+
+sudo dnf install mariadb105
+mysql --version
+
+
+go to the aurora db here need to copy database endpoint
+
+db-three-tier-web.c76m68imyltl.ap-southeast-2.rds.amazonaws.com
+
+MySQL -h dbendpoint -u admin -p
+
+mysql -h mydbthreetier.cne0suammmwj.us-east-2.rds.amazonaws.com -u admin -p
+mysql -h threetierdb.c76m68imyltl.ap-southeast-2.rds.amazonaws.com -u admin
+create database usersaws;
+
+show databases;
+
+use usersaws;
+
+
+CREATE TABLE IF NOT EXISTS users(
+  id INT NOT NULL AUTO_INCREMENT, 
+  name VARCHAR(100),  
+  email VARCHAR(100), 
+  PRIMARY KEY(id)
+);
+
+show tables;
+
+
+Lets insert some info into the table
+INSERT INTO users (name, email) VALUES ('Tom', 'tom@gmail.com');
+
+
+SELECT * FROM users;
+
+exit
+
+ec2-user: Install Nodejs
+
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+source ~/.bashrc
+nvm install --lts
+node -v
+
+backend code to ec2 instance
+
+cd ~/ 
+sudo aws s3 cp s3://awsthreetierasm/node-next-aws/backend/ backend --recursive
+
+sudo chown -R ec2-user:ec2-user /home/ec2-user/backend
+npm install
+npm run dev
+
+
+To run node as a service, we will install pm2
+npm install -g pm2 (You will see 'found 0 vulnerabilities)
+
+pm2 start index.js
+
+pm2 list
+
+
+pm2 status
+
+pm2 logs
+
+ctrl+c
+
+pm2 startup
+
+pm2 save
+
+curl http://localhost:5000/
+
+
+
+
+front end
+
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+source ~/.bashrc
+nvm install --lts
+node -v
+
+sudo aws s3 cp s3://awsthreetierasm/node-next-aws/frontend/ frontend --recursive
+
+sudo chown -R ec2-user:ec2-user /home/ec2-user/frontend
+
+
+npm install
+npm run dev
+
+
+
+
+
+
+
+
+
+
+now pwd
+home/ec2-user
+cd ..
+cd ..
+cd ~/
+
+Download application code from S3 and start the application
+
+
+sudo aws s3 cp s3://mythreetierwebtier/application-code/app-tier/ app-tier --recursive
+
+mythreetierwebtier
+
+ls
+
+cd app-tier
+
+if error for installation: sudo chown -R ec2-user:ec2-user /home/ec2-user/backend
+this change the ownership to ec2-user
+
+npm install
+
+ls
+
+
+pm2 start index.js
+
+pm2 list
+
+
+pm2 status
+
+pm2 logs
+
+ctrl+c
+
+pm2 startup
+
+pm2 save
+
+Verify that the application is running by executing
+curl http://localhost:4000/health
+It should return: This is the health check.
+
+curl http://localhost:4000/transactions
+
+
+
+create target group for those two private APP tier instances 
+
+
+instance in app tier create an AMI
+
+action -> instance settings-> create image
+
+AppTierImage - name
+...- desc
+
+as default and create image
+
+Target grp -- create -- instances - name -- AppTier-TG --http port- 4000 vpc-ourvpc - health - /health
+
+advance setting 
+
+
+health threshold - 2 
+
+next 
+
+
+Load balancer
+
+
+application LB
+
+AppTier-LB-Internal 
+
+internal
+
+vpc
+
+subnet and app tier subnet 
+
+select security internal-LB-Security group
+
+Listen http 80 target grp -- appTierTargerGRp
+
+
+create load balancer
+
+
+Go To launch Templates
+
+AppTierLaunchTemplate -- Name
+
+ My AMIs - Owned by me 
+
+ AppTierImage
+
+advanced details -- IAM instance profile -- demo-ec2-role
+
+create .....
+
+Now left side below--- autoscaling groups
+
+name -  AppTierASG
+AppTier-LaunchTier
+
+vpc - az pvt az1 and 2
+
+next
+
+attach to an existing LB
+
+AppTierTargetGrp
+
+default
+
+next 
+
+DC - 2 2 2
+
+None next next next create
+
+
+edit the nginx.config with internal dns name 
+
+upload it to s3 
+
+so the files are
+
+app-tier
+nginx.conf
+web-tier
+
+
+No go to ec2 
+
+demowebserver
+
+amazon Linux
+
+publis web subnet az1
+
+autoassign enable
+
+security grp -- webtier--sg
+
+advanced details
+
+IAM - demeec2rules
+
+
+connect with session manager
+
+
+
+sudo -su ec2-user
+
+
+cd home/ec2-user
+pwd
+
+
+curl -o- https://raw.githubusercontent.com/avizway1/aws_3tier_architecture/main/install.sh | bash
+source ~/.bashrc
+nvm install 16
+nvm use 16
+
+
+aws s3 cp s3://<S3 Bucker Name>/application-code/web-tier/ web-tier --recursive
+
+  
+
+
+
+ls
+
+cd web-tier
+
+npm install
+
+npm run build
+
+
+Install nginx
+sudo yum install nginx
+cd /etc/nginx
+
+cp ngnix.conf ngnix.conf_bkp
+
+
+in the downloaded file update with internal laod balancer dns name
+
+remove
+sudo rm nginx.conf
+sudo aws s3 cp s3://<S3 Bucker Name>/application-code/nginx.conf .
+
+
+sudo service nginx restart
+
+sudo service nginx status
+chmod -R 755 /home/ec2-user
+
+sudo chkconfig nginx on
+
+
+
+now create AMI of web ec2 instance
+
+
+
+Now create a target group
+
+create target group--> instance--> name- webserver(TG)  
+
+Now create Load Balancer
+
+
+Now go to Launch Template
+
+
+
+Now Autoscaling group
+
+copy the ip paste on browser, you should see the output
+
+
+
+
+
+
+nginx intall
+
+sudo yum install nginx
+
+sudo systemctl start nginx
+sudo systemctl status nginx
+
+cd /etc/nginx/nginx.conf
+
+sudo nginx -t
+
+
+sudo chmod 755 /home
+sudo chmod 755 /home/ec2-user
+sudo chmod 755 /home/ec2-user/web-tier
+
+sudo chown -R nginx:nginx /home/ec2-user/web-tier/build
+sudo chmod -R 755 /home/ec2-user/web-tier/build
+
+
+Delete everything once its done
+First delete ASG
+Next delete both LBs
+Next delete both TGs
+Next delete both AMIs
+Next delete both Snapshots of AMIs
+Next delete DB
+Next delete S3 Bucket
+Next delete Certificate
+Next delete Route 53 record
+Next delete NAT GW
+Next delete Elastic IP. This came because of NATGW
+Next delete VPC
+
