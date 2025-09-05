@@ -43,9 +43,17 @@ app.post('/api/users', (req, res) => {
     const { name, email } = req.body;
     db.query('INSERT INTO users (name, email) VALUES (?, ?)', [name, email], (err, result) => {
         if (err) return res.status(500).json(err);
-        res.json({ message: 'User added', id: result.insertId });
+
+        // Return full user object
+        const newUser = {
+            id: result.insertId,  // MySQL auto-generated ID
+            name: name,
+            email: email
+        };
+        res.json(newUser);
     });
 });
+
 
 // Delete user
 app.delete('/api/users/:id', (req, res) => {

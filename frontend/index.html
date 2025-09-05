@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CRUD App</title>
+  <style>
+     body {
+      background-color: #f9f9f9;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      font-family: Arial, sans-serif;
+      color: black;
+    }
+
+    .container {
+      background-color: #ffffff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 600px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: black;
+    }
+
+    form {
+      margin-bottom: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    input {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      color: black;
+    }
+
+    button {
+      background-color: #0070f3;
+      color: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      color: black;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+
+    thead {
+      background-color: #f1f1f1;
+    }
+
+    .delete-btn {
+      background-color: #e3342f;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Add User</h1>
+
+    <!-- Form -->
+    <form id="userForm">
+      <input type="text" id="name" placeholder="Enter name" required>
+      <input type="email" id="email" placeholder="Enter email" required>
+      <button type="submit">Add</button>
+    </form>
+  <!-- Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="userTable">
+        <!-- Dynamic rows go here -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+  const userTable = document.getElementById('userTable');
+  let items = [];
+
+  // Fetch users from API when page loads
+  async function loadUsers() {
+    const res = await fetch('http://localhost:5000/api/users');
+    items = await res.json();  // assuming API returns JSON [{id, name, email}, ...]
+    renderTable();
+  }
+
+  // Render table
+  function renderTable() {
+    userTable.innerHTML = '';
+    items.forEach(item => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${item.id}</td>
+        <td>${item.name}</td>
+        <td>${item.email}</td>
+        <td><button class="delete-btn" onclick="deleteItem(${item.id})">Delete</button></td>
+      `;
+      userTable.appendChild(row);
+    });
+  }
+   // Add user
+   const form = document.getElementById('userForm');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+
+      const res = await fetch('http://localhost:5000/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email })
+      });
+
+      const newUser = await res.json();
+      items.push(newUser);
+      renderTable();
+      form.reset();
+    });
+
+  // Delete user
+  async function deleteItem(id) {
+    await fetch(`http://localhost:5000/api/users/${id}`, { method: 'DELETE' });
+    items = items.filter(user => user.id !== id);
+    renderTable();
+  }
+
+  // Load when page opens
+  loadUsers();
+</script>
+
+</body>
+</html>
