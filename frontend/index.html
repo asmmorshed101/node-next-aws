@@ -109,10 +109,11 @@
   <script>
   const userTable = document.getElementById('userTable');
   let items = [];
-
+	const BASE_URL = "http://localhost:5000";
+	
   // Fetch users from API when page loads
   async function loadUsers() {
-    const res = await fetch('http://localhost:5000/api/users');
+    const res = await fetch(`${BASE_URL}/api/users`);
     items = await res.json();  // assuming API returns JSON [{id, name, email}, ...]
     renderTable();
   }
@@ -139,7 +140,7 @@
       const name = document.getElementById('name').value;
       const email = document.getElementById('email').value;
 
-      const res = await fetch('http://localhost:5000/api/users', {
+      const res = await fetch(`${BASE_URL}/api/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email })
@@ -153,7 +154,7 @@
 
   // Delete user
   async function deleteItem(id) {
-    await fetch(`http://localhost:5000/api/users/${id}`, { method: 'DELETE' });
+    await fetch(``${BASE_URL}/api/users/${id}`, { method: 'DELETE' });
     items = items.filter(user => user.id !== id);
     renderTable();
   }
